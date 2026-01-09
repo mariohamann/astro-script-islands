@@ -1,11 +1,79 @@
 ---
-import Welcome from '../components/Welcome.astro';
-import Layout from '../layouts/Layout.astro';
-
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
+import ScriptIsland from "../integrations/script-island/ScriptIsland.si"
 ---
 
-<Layout>
-	<Welcome />
-</Layout>
+<html>
+  <body>
+    <h1>Test</h1>
+
+    <div class="box" style="width: 100px; height: 100px; background: red;">
+    </div>
+
+    <!-- With import -->
+    <ScriptIsland client:visible>
+      <script>
+        import gsap from "gsap"
+        gsap.to(".box", { x: 300, duration: 2 })
+        console.log("with import")
+      </script>
+    </ScriptIsland>
+
+    <!-- Tiny script -->
+    <ScriptIsland client:idle={{ timeout: 4000 }}>
+      <script>
+        import {} from "astro:schema" // Forces external bundling
+        console.log("tiny")
+      </script>
+    </ScriptIsland>
+
+    <!-- Actually large script - lots of real code -->
+    <ScriptIsland client:idle={{ timeout: 3000 }}>
+      <script>
+        import {} from "astro:schema" // Forces external bundling
+        const config1 = {
+          name: "alpha",
+          value: 1,
+          enabled: true,
+          description: "First configuration option",
+        }
+        const config2 = {
+          name: "beta",
+          value: 2,
+          enabled: false,
+          description: "Second configuration option",
+        }
+        const config3 = {
+          name: "gamma",
+          value: 3,
+          enabled: true,
+          description: "Third configuration option",
+        }
+        const config4 = {
+          name: "delta",
+          value: 4,
+          enabled: false,
+          description: "Fourth configuration option",
+        }
+        function processConfig1(c) {
+          return c.name + c.value + c.enabled + c.description
+        }
+        function processConfig2(c) {
+          return c.name + c.value + c.enabled + c.description
+        }
+        function processConfig3(c) {
+          return c.name + c.value + c.enabled + c.description
+        }
+        function processConfig4(c) {
+          return c.name + c.value + c.enabled + c.description
+        }
+        console.log(
+          "large",
+          processConfig1(config1),
+          processConfig2(config2),
+          processConfig3(config3),
+          processConfig4(config4)
+        )
+      </script>
+    </ScriptIsland>
+  </body>
+</html>

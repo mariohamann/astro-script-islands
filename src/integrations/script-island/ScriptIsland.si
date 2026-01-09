@@ -1,0 +1,17 @@
+---
+const slotContent = await Astro.slots.render('default');
+
+const srcMatch = slotContent.match(/<script[^>]*\bsrc=["']([^"']+)["'][^>]*>/i);
+const inlineMatch = slotContent.match(/<script[^>]*>([\s\S]*?)<\/script>/i);
+
+const scriptSrc = srcMatch?.[1] || '';
+const scriptContent = !srcMatch && inlineMatch?.[1]?.trim() || '';
+---
+
+<script-island data-script={scriptSrc}>
+  {scriptContent && (
+    <script type="text/plain" data-script-content>
+      {scriptContent}
+    </script>
+  )}
+</script-island>
