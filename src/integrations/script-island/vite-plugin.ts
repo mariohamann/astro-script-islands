@@ -1,4 +1,3 @@
-// vite-plugin.ts
 import type { Plugin, ViteDevServer } from 'vite';
 import { createHash } from 'node:crypto';
 import fs from 'node:fs/promises';
@@ -109,7 +108,6 @@ export default function scriptIslandVitePlugin(
       for (const [fileName, chunk] of Object.entries(bundle)) {
         if (chunk.type === 'chunk' && chunk.name?.startsWith('script-island-')) {
           const id = chunk.name.replace('script-island-', '');
-          // FIX: Store just the fileName, Astro will handle the base path (e.g., /_astro/)
           emittedChunks.set(id, fileName);
         }
       }

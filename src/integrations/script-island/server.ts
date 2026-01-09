@@ -12,7 +12,6 @@ const renderer: NamedSSRLoadedRendererValue = {
     const scriptMatch = slot.match(/<script[^>]*>([\s\S]*?)<\/script>/i);
     const scriptContent = scriptMatch?.[1]?.trim() || '';
 
-    // Use only content for hash - same as vite-plugin will do
     const contentHash = createHash('md5').update(scriptContent).digest('hex').slice(0, 12);
 
     return {

@@ -1,4 +1,3 @@
-// index.ts
 import type { AstroIntegration } from 'astro';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -17,7 +16,6 @@ export default function scriptIsland(): AstroIntegration {
       'astro:config:setup': ({ addRenderer, updateConfig }) => {
         addRenderer({
           name: 'script-island',
-          clientEntrypoint: resolve(__dirname, './client.ts'),
           serverEntrypoint: resolve(__dirname, './server.ts'),
         });
 
@@ -59,28 +57,15 @@ export default function scriptIsland(): AstroIntegration {
           let content = fs.readFileSync(file, 'utf-8');
           let changed = false;
 
-          // Remove duplicate templates
-          const deduped = content.replace(
-            /(<template data-astro-template>[\s\S]*?<\/template>)\s*<template data-astro-template>[\s\S]*?<\/template>/g,
-            '$1'
-          );
-          if (deduped !== content) {
-            content = deduped;
-            changed = true;
-          }
-
-          // Replace script-island + template with data-script
           const transformed = content.replace(
-            /<script-island data-hash="([^"]+)"><\/script-island>\s*<template data-astro-template>\s*<script>[\s\S]*?<\/script>\s*<\/template>/g,
-            (match, hashValue) => {
+            /(<astro-island[^>]+)(component-url="[^"]+")([^>]+><script-island data-hash="([^"]+)"><\/script-island>)<template data-astro-template>[\s\S]*?<\/template>/g,
+            (match, before, componentUrl, after, hashValue) => {
               const chunkFile = emittedChunks.get(hashValue);
               if (chunkFile) {
                 changed = true;
-                // FIX: Changed data-src to data-script
-                return `<script-island data-script="/${chunkFile}"></script-island>`;
+                return `${before}component-url="/${chunkFile}"${after}`;
               }
               console.warn(`[script-island] No chunk found for hash: ${hashValue}`);
-              console.warn(`[script-island] Available:`, [...emittedChunks.keys()]);
               return match;
             }
           );
