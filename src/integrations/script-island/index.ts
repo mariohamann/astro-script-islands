@@ -58,7 +58,7 @@ export default function scriptIsland(): AstroIntegration {
           let changed = false;
 
           const transformed = content.replace(
-            /(<astro-island[^>]+)(component-url="[^"]+")([^>]+><script-island data-hash="([^"]+)"><\/script-island>)<template data-astro-template>[\s\S]*?<\/template>/g,
+            /(<astro-island[^>]+)(component-url="[^"]+")([^>]*>)<script-island data-hash="([a-f0-9]+)"><\/script-island><template data-astro-template>[\s\S]*?<\/template>/g,
             (match, before, componentUrl, after, hashValue) => {
               const chunkFile = emittedChunks.get(hashValue);
               if (chunkFile) {
