@@ -6,6 +6,8 @@ import { globby } from 'globby';
 const VIRTUAL_PREFIX = 'virtual:script-island:';
 const RESOLVED_PREFIX = '\0' + VIRTUAL_PREFIX;
 
+
+
 interface Island {
   id: string;
   content: string;
@@ -17,9 +19,11 @@ export default function scriptIslandVitePlugin(): Plugin {
   const islands = new Map<string, Island>();
   let server: ViteDevServer | null = null;
 
-  const hash = (content: string, file: string, index: number): string => {
-    return createHash('md5').update(`${file}:${index}:${content}`).digest('hex').slice(0, 12);
-  };
+const hash = (content: string, file: string, index: number): string => {
+  return createHash('md5').update(`${file}:${index}:${content}`).digest('hex').slice(0, 12);
+};
+
+
 
   const extractFromFile = async (filePath: string): Promise<Island[]> => {
     const content = await fs.readFile(filePath, 'utf-8');
@@ -31,7 +35,7 @@ export default function scriptIslandVitePlugin(): Plugin {
     let index = 0;
 
     while ((match = regex.exec(content)) !== null) {
-      const scriptContent = match[1].trim();
+      const scriptContent = removeDummyImport(match[1].trim());
       const id = hash(scriptContent, filePath, index);
 
       extracted.push({
@@ -82,7 +86,7 @@ export default function scriptIslandVitePlugin(): Plugin {
 
       if (!island) return '';
 
-      return island.content;
+      return removeDummyImport(island.content);
     },
 
     async buildStart() {
@@ -98,11 +102,12 @@ export default function scriptIslandVitePlugin(): Plugin {
       let hasChanges = false;
 
       const transformed = code.replace(regex, (_match, open, attrs, mid, content, close) => {
-        const islandId = hash(content.trim(), id, index);
+        const modifiedContent = DUMMY_IMPORT + '\n' + content;
+        const islandId = hash(removeDummyImport(content.trim()), id, index);
         index++;
         hasChanges = true;
 
-        return `${open}${attrs} data-sid="${islandId}"${mid}${content}${close}`;
+        return `${open}${attrs} data-sid="${islandId}"${mid}${modifiedContent}${close}`;
       });
 
       return hasChanges ? transformed : undefined;

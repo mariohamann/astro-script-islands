@@ -20,13 +20,16 @@ export default function scriptIsland(): AstroIntegration {
 
         updateConfig({
           vite: {
+            build: {
+              assetsInlineLimit: 0, // Force bundling of all scripts to ensure ScriptIsland scripts are external
+            },
             plugins: [
               scriptIslandVitePlugin(),
               {
                 name: 'script-island-extension',
                 enforce: 'pre',
 
-                resolveId(id, importer) {
+                resolveId(id) {
                   if (id.endsWith('.si')) {
                     return id;
                   }

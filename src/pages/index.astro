@@ -21,7 +21,6 @@ import ScriptIsland from "../integrations/script-island/ScriptIsland.si"
     <!-- Tiny script -->
     <ScriptIsland client:idle={{ timeout: 4000 }}>
       <script>
-        import {} from "astro:schema" // Forces external bundling
         console.log("tiny")
       </script>
     </ScriptIsland>
@@ -29,7 +28,6 @@ import ScriptIsland from "../integrations/script-island/ScriptIsland.si"
     <!-- Actually large script - lots of real code -->
     <ScriptIsland client:idle={{ timeout: 3000 }}>
       <script>
-        import {} from "astro:schema" // Forces external bundling
         const config1 = {
           name: "alpha",
           value: 1,
@@ -75,5 +73,15 @@ import ScriptIsland from "../integrations/script-island/ScriptIsland.si"
         )
       </script>
     </ScriptIsland>
+
+    <!-- Inline script without import -->
+    <ScriptIsland client:idle={{ timeout: 5000 }}>
+      <script>
+        console.log("inline without import")
+      </script>
+    </ScriptIsland>
+    <script>
+      console.log("normal script that should be inlined")
+    </script>
   </body>
 </html>

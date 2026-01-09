@@ -6,10 +6,14 @@ const inlineMatch = slotContent.match(/<script[^>]*>([\s\S]*?)<\/script>/i);
 
 const scriptSrc = srcMatch?.[1] || '';
 const scriptContent = !srcMatch && inlineMatch?.[1]?.trim() || '';
+
+const islandId = Astro.props['data-sid'];
+const virtualSrc = islandId ? `virtual:script-island:${islandId}` : '';
+const finalScriptSrc = scriptSrc || virtualSrc;
 ---
 
-<script-island data-script={scriptSrc}>
-  {scriptContent && (
+<script-island data-script={finalScriptSrc}>
+  {scriptContent && !finalScriptSrc && (
     <script type="text/plain" data-script-content>
       {scriptContent}
     </script>
