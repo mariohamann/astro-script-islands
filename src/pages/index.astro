@@ -11,14 +11,23 @@ import ScriptIsland from "../integrations/script-island/ScriptIsland.si"
 
     <div class="box" style="width: 100px; height: 100px; background: red;">
     </div>
-    <ScriptIsland client:visible client:idle={{ timeout: 2000 }}>
+    <div class="box2" style="width: 100px; height: 100px; background: green;">
+    </div>
+    <ScriptIsland client:visible client:idle={{ timeout: 1000 }}>
       <script is:inline>
         import gsap from "gsap"
         gsap.to(".box", { rotation: 360, duration: 2 })
         console.log("with import")
       </script>
     </ScriptIsland>
-    <ScriptIsland client:idle={{ timeout: 4000 }}>
+    <ScriptIsland client:visible client:idle={{ timeout: 3000 }}>
+      <script is:inline>
+        import gsap from "gsap"
+        gsap.to(".box2", { rotation: 360, duration: 2 })
+        console.log("with import")
+      </script>
+    </ScriptIsland>
+    <ScriptIsland client:idle={{ timeout: 2000 }}>
       <script is:inline>
         console.log("tiny")
       </script>
