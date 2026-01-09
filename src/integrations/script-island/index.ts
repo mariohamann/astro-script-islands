@@ -26,22 +26,11 @@ export default function scriptIsland(): AstroIntegration {
               {
                 name: 'script-island-extension',
                 enforce: 'pre',
-
                 resolveId(id) {
-                  if (id.endsWith('.si')) {
-                    return id;
-                  }
+                  if (id.endsWith('.si')) return id;
                 },
-
                 load(id) {
-                  if (id.endsWith('.si')) {
-                    return `
-                      function ScriptIsland() { return null; }
-                      ScriptIsland.isScriptIsland = true;
-                      export { ScriptIsland };
-                      export default ScriptIsland;
-                    `;
-                  }
+                  if (id.endsWith('.si')) return `export default () => null`;
                 },
               },
             ],
