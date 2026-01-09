@@ -1,3 +1,4 @@
+// vite-plugin.ts
 import type { Plugin, ViteDevServer } from 'vite';
 import { createHash } from 'node:crypto';
 import fs from 'node:fs/promises';
@@ -6,8 +7,6 @@ import { globby } from 'globby';
 const VIRTUAL_PREFIX = 'virtual:script-island:';
 const RESOLVED_PREFIX = '\0' + VIRTUAL_PREFIX;
 
-
-
 interface Island {
   id: string;
   content: string;
@@ -15,15 +14,16 @@ interface Island {
   index: number;
 }
 
-export default function scriptIslandVitePlugin(): Plugin {
+export default function scriptIslandVitePlugin(
+  emittedChunks: Map<string, string>
+): Plugin {
   const islands = new Map<string, Island>();
   let server: ViteDevServer | null = null;
+  let isBuild = false;
 
-const hash = (content: string, file: string, index: number): string => {
-  return createHash('md5').update(`${file}:${index}:${content}`).digest('hex').slice(0, 12);
-};
-
-
+  const hash = (content: string): string => {
+    return createHash('md5').update(content).digest('hex').slice(0, 12);
+  };
 
   const extractFromFile = async (filePath: string): Promise<Island[]> => {
     const content = await fs.readFile(filePath, 'utf-8');
@@ -35,8 +35,8 @@ const hash = (content: string, file: string, index: number): string => {
     let index = 0;
 
     while ((match = regex.exec(content)) !== null) {
-      const scriptContent = removeDummyImport(match[1].trim());
-      const id = hash(scriptContent, filePath, index);
+      const scriptContent = match[1].trim();
+      const id = hash(scriptContent);
 
       extracted.push({
         id,
@@ -56,17 +56,19 @@ const hash = (content: string, file: string, index: number): string => {
 
     islands.clear();
 
-    await Promise.all(
-      files.map(async (file) => {
-        const extracted = await extractFromFile(file);
-        extracted.forEach((island) => islands.set(island.id, island));
-      })
-    );
+    for (const file of files) {
+      const extracted = await extractFromFile(file);
+      extracted.forEach((island) => islands.set(island.id, island));
+    }
   };
 
   return {
     name: 'vite-plugin-script-island',
     enforce: 'pre',
+
+    configResolved(config) {
+      isBuild = config.command === 'build';
+    },
 
     configureServer(_server) {
       server = _server;
@@ -74,7 +76,7 @@ const hash = (content: string, file: string, index: number): string => {
 
     resolveId(id) {
       if (id.startsWith(VIRTUAL_PREFIX)) {
-        return '\0' + id;
+        return RESOLVED_PREFIX + id.slice(VIRTUAL_PREFIX.length);
       }
     },
 
@@ -86,31 +88,31 @@ const hash = (content: string, file: string, index: number): string => {
 
       if (!island) return '';
 
-      return removeDummyImport(island.content);
+      return island.content;
     },
 
     async buildStart() {
       await analyzeAll();
+
+      if (isBuild) {
+        for (const [id] of islands) {
+          this.emitFile({
+            type: 'chunk',
+            id: VIRTUAL_PREFIX + id,
+            name: `script-island-${id}`,
+          });
+        }
+      }
     },
 
-    transform(code, id) {
-      if (!id.endsWith('.astro')) return;
-
-      const regex = /(<ScriptIsland\s+)([^>]*client:[^>]*)(>\s*<script[^>]*>)([\s\S]*?)(<\/script>\s*<\/ScriptIsland>)/gi;
-
-      let index = 0;
-      let hasChanges = false;
-
-      const transformed = code.replace(regex, (_match, open, attrs, mid, content, close) => {
-        const modifiedContent = DUMMY_IMPORT + '\n' + content;
-        const islandId = hash(removeDummyImport(content.trim()), id, index);
-        index++;
-        hasChanges = true;
-
-        return `${open}${attrs} data-sid="${islandId}"${mid}${modifiedContent}${close}`;
-      });
-
-      return hasChanges ? transformed : undefined;
+    generateBundle(_, bundle) {
+      for (const [fileName, chunk] of Object.entries(bundle)) {
+        if (chunk.type === 'chunk' && chunk.name?.startsWith('script-island-')) {
+          const id = chunk.name.replace('script-island-', '');
+          // FIX: Store just the fileName, Astro will handle the base path (e.g., /_astro/)
+          emittedChunks.set(id, fileName);
+        }
+      }
     },
 
     async handleHotUpdate({ file }) {

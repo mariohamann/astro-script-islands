@@ -1,21 +1,21 @@
-export default (element: HTMLElement) => {
-  return async (_Component: unknown, _props: Record<string, unknown>, slots: Record<string, string>) => {
-    const scriptIsland = element.querySelector('script-island');
-    const scriptSrc = scriptIsland?.getAttribute('data-script');
+export class ScriptIsland extends HTMLElement {
+  async connectedCallback() {
+    const scriptSrc = this.getAttribute('data-script');
 
     if (scriptSrc) {
       await import(/* @vite-ignore */ scriptSrc);
       return;
     }
 
-    const slotContent = slots?.default || '';
-    const scriptMatch = slotContent.match(/<script[^>]*>([\s\S]*?)<\/script>/i);
+    const inlineScript = this.querySelector('script');
 
-    if (scriptMatch?.[1]) {
+    if (inlineScript?.textContent) {
       const script = document.createElement('script');
       script.type = 'module';
-      script.textContent = scriptMatch[1];
+      script.textContent = inlineScript.textContent;
       document.head.appendChild(script);
     }
-  };
-};
+  }
+}
+
+customElements.define('script-island', ScriptIsland);

@@ -8,76 +8,16 @@ import ScriptIsland from "../integrations/script-island/ScriptIsland.si"
 
     <div class="box" style="width: 100px; height: 100px; background: red;">
     </div>
-
-    <!-- With import -->
     <ScriptIsland client:visible>
-      <script>
+      <script is:inline>
         import gsap from "gsap"
-        gsap.to(".box", { x: 300, duration: 2 })
+        gsap.to(".box", { rotation: 360, duration: 2 })
         console.log("with import")
       </script>
     </ScriptIsland>
-
-    <!-- Tiny script -->
     <ScriptIsland client:idle={{ timeout: 4000 }}>
-      <script>
+      <script is:inline>
         console.log("tiny")
-      </script>
-    </ScriptIsland>
-
-    <!-- Actually large script - lots of real code -->
-    <ScriptIsland client:idle={{ timeout: 3000 }}>
-      <script>
-        const config1 = {
-          name: "alpha",
-          value: 1,
-          enabled: true,
-          description: "First configuration option",
-        }
-        const config2 = {
-          name: "beta",
-          value: 2,
-          enabled: false,
-          description: "Second configuration option",
-        }
-        const config3 = {
-          name: "gamma",
-          value: 3,
-          enabled: true,
-          description: "Third configuration option",
-        }
-        const config4 = {
-          name: "delta",
-          value: 4,
-          enabled: false,
-          description: "Fourth configuration option",
-        }
-        function processConfig1(c) {
-          return c.name + c.value + c.enabled + c.description
-        }
-        function processConfig2(c) {
-          return c.name + c.value + c.enabled + c.description
-        }
-        function processConfig3(c) {
-          return c.name + c.value + c.enabled + c.description
-        }
-        function processConfig4(c) {
-          return c.name + c.value + c.enabled + c.description
-        }
-        console.log(
-          "large",
-          processConfig1(config1),
-          processConfig2(config2),
-          processConfig3(config3),
-          processConfig4(config4)
-        )
-      </script>
-    </ScriptIsland>
-
-    <!-- Inline script without import -->
-    <ScriptIsland client:idle={{ timeout: 5000 }}>
-      <script>
-        console.log("inline without import")
       </script>
     </ScriptIsland>
     <script>
