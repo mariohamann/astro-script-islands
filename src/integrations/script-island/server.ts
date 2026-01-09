@@ -15,7 +15,7 @@ const renderer: NamedSSRLoadedRendererValue = {
     const contentHash = createHash('md5').update(scriptContent).digest('hex').slice(0, 12);
 
     return {
-      html: `<script-island data-hash="${contentHash}"></script-island>`,
+      html: `<!--script-island:${contentHash}-->`,
     };
   },
   supportsAstroStaticSlot: false,
