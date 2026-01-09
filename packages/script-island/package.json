@@ -1,0 +1,24 @@
+{
+  "name": "astro-script-island",
+  "version": "0.0.1",
+  "type": "module",
+  "main": "./src/index.ts",
+  "exports": {
+    "./integration": {
+      "types": "./src/integration.ts",
+      "default": "./src/integration.ts"
+    },
+    "./component": {
+      "types": "./src/component.si.d.ts",
+      "default": "./src/component.si"
+    }
+  },
+  "types": "./src/index.ts",
+  "peerDependencies": {
+    "astro": "^5.0.0"
+  },
+  "dependencies": {
+    "globby": "^13.2.2"
+  },
+  "packageManager": "pnpm@10.18.3"
+}
