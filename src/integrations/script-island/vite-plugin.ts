@@ -2,14 +2,20 @@ import type { Plugin, ViteDevServer } from 'vite';
 import { createHash } from 'node:crypto';
 import fs from 'node:fs/promises';
 import { globby } from 'globby';
+import path from 'node:path';
 
 const VIRTUAL_PREFIX = 'virtual:script-island:';
 const RESOLVED_PREFIX = '\0' + VIRTUAL_PREFIX;
 
+interface Island {
+  content: string;
+  sourceFile: string;
+}
+
 export default function scriptIslandVitePlugin(
   emittedChunks: Map<string, string>
 ): Plugin {
-  const islands = new Map<string, string>();
+  const islands = new Map<string, Island>();
   let server: ViteDevServer | null = null;
   let isBuild = false;
 
@@ -19,13 +25,16 @@ export default function scriptIslandVitePlugin(
   const extractFromFile = async (filePath: string) => {
     const content = await fs.readFile(filePath, 'utf-8');
     const regex = /<ScriptIsland\s+[^>]*client:[^>]*>\s*<script[^>]*>([\s\S]*?)<\/script>\s*<\/ScriptIsland>/gi;
-    const extracted = new Map<string, string>();
+    const extracted = new Map<string, Island>();
 
     let match;
     while ((match = regex.exec(content)) !== null) {
       const scriptContent = match[1].trim();
       const id = hash(scriptContent);
-      extracted.set(id, scriptContent);
+      extracted.set(id, {
+        content: scriptContent,
+        sourceFile: filePath,
+      });
     }
 
     return extracted;
@@ -37,7 +46,7 @@ export default function scriptIslandVitePlugin(
 
     for (const file of files) {
       const extracted = await extractFromFile(file);
-      extracted.forEach((content, id) => islands.set(id, content));
+      extracted.forEach((island, id) => islands.set(id, island));
     }
   };
 
@@ -53,19 +62,33 @@ export default function scriptIslandVitePlugin(
       server = _server;
     },
 
-    resolveId(id) {
+    resolveId(id, importer) {
       if (id.startsWith(VIRTUAL_PREFIX)) {
         return RESOLVED_PREFIX + id.slice(VIRTUAL_PREFIX.length);
       }
       if (id.startsWith('/' + VIRTUAL_PREFIX)) {
         return RESOLVED_PREFIX + id.slice(VIRTUAL_PREFIX.length + 1);
       }
+
+      if (importer?.startsWith(RESOLVED_PREFIX)) {
+        if (id.startsWith('.') || id.startsWith('/')) {
+          const islandId = importer.slice(RESOLVED_PREFIX.length);
+          const island = islands.get(islandId);
+
+          if (island) {
+            const sourceDir = path.dirname(island.sourceFile);
+            const resolved = path.resolve(sourceDir, id);
+            return resolved;
+          }
+        }
+      }
     },
 
     load(id) {
       if (!id.startsWith(RESOLVED_PREFIX)) return;
       const islandId = id.slice(RESOLVED_PREFIX.length);
-      return islands.get(islandId) || '';
+      const island = islands.get(islandId);
+      return island?.content || '';
     },
 
     async buildStart() {
@@ -95,7 +118,7 @@ export default function scriptIslandVitePlugin(
       if (!file.endsWith('.astro')) return;
 
       const extracted = await extractFromFile(file);
-      extracted.forEach((content, id) => islands.set(id, content));
+      extracted.forEach((island, id) => islands.set(id, island));
 
       if (server) {
         extracted.forEach((_, id) => {

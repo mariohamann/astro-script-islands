@@ -32,6 +32,11 @@ import ScriptIsland from "../integrations/script-island/ScriptIsland.si"
         console.log("tiny")
       </script>
     </ScriptIsland>
+    <ScriptIsland client:idle={{ timeout: 2000 }}>
+      <script is:inline>
+        import "../lib/test.js"
+      </script>
+    </ScriptIsland>
     <script>
       console.log("normal script that should be inlined")
     </script>
