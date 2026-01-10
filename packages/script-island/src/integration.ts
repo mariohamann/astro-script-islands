@@ -13,32 +13,12 @@ export default function scriptIsland(): AstroIntegration {
   return {
     name: 'script-island',
     hooks: {
-      'astro:config:setup': ({ addRenderer, updateConfig, injectScript, command }) => {
+      'astro:config:setup': ({ addRenderer, updateConfig, command }) => {
         addRenderer({
           name: 'script-island',
           serverEntrypoint: resolve(__dirname, './server.ts'),
+          clientEntrypoint: resolve(__dirname, './client.ts'),
         });
-
-        if (command === 'dev') {
-          injectScript('page', `
-            document.addEventListener('DOMContentLoaded', () => {
-              document.querySelectorAll('astro-island').forEach((island) => {
-                const comment = Array.from(island.childNodes).find(
-                  (node) => node.nodeType === 8 && node.nodeValue?.startsWith('script-island:')
-                );
-                
-                if (comment?.nodeValue) {
-                  const hash = comment.nodeValue.replace('script-island:', '');
-                  const componentUrl = island.getAttribute('component-url');
-                  
-                  if (componentUrl?.endsWith('.si')) {
-                    island.setAttribute('component-url', '/virtual:script-island:' + hash);
-                  }
-                }
-              });
-            });
-          `);
-        }
 
         updateConfig({
           vite: {
