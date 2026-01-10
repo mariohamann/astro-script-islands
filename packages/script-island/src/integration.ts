@@ -58,7 +58,7 @@ export default function scriptIsland(): AstroIntegration {
             const relativePath = '/' + path.relative(distPath, jsFile).replace(/\\/g, '/');
             const isMultiple = marker[2] === ' multiple';
             externalScripts.set(marker[1], { path: relativePath, multiple: isMultiple });
-            console.log(`[script-island] Found external marker ${marker[1]}${isMultiple ? ' (multiple)' : ' (once)'} in ${relativePath}`);
+            // console.log(`[script-island] Found external marker ${marker[1]}${isMultiple ? ' (multiple)' : ' (once)'} in ${relativePath}`);
           }
         }
 
@@ -81,21 +81,21 @@ export default function scriptIsland(): AstroIntegration {
               const cleanScript = scriptContent.replace(/\/\*! @script-island [a-f0-9]+( multiple)? \*\/\n?/, '');
               const isMultiple = markerMatch[2] === ' multiple';
               inlineScripts.set(markerMatch[1], { content: cleanScript, multiple: isMultiple });
-              console.log(`[script-island] Found inline marker ${markerMatch[1]}${isMultiple ? ' (multiple)' : ' (once)'}`);
+              // console.log(`[script-island] Found inline marker ${markerMatch[1]}${isMultiple ? ' (multiple)' : ' (once)'}`);
             }
           }
 
           content = content.replace(
             /<astro-island([^>]*?)component-url="[^"]*component\.[^"]+"([^>]*)>([\s\S]*?)<!--script-island:([a-f0-9]+)--><template data-astro-template>[\s\S]*?<\/template><!--astro:end--><\/astro-island>/g,
             (match, before, after, htmlContent, islandId) => {
-              console.log(`[script-island] Processing island with ID: ${islandId}`);
+              // console.log(`[script-island] Processing island with ID: ${islandId}`);
 
               const externalInfo = externalScripts.get(islandId);
               const inlineInfo = inlineScripts.get(islandId);
               const isMultiple = externalInfo?.multiple || inlineInfo?.multiple || false;
 
               if (!isMultiple && pageRenderedOnce.has(islandId)) {
-                console.log(`[script-island] → Removing duplicate 'once' island: ${islandId}`);
+                // console.log(`[script-island] → Removing duplicate 'once' island: ${islandId}`);
                 changed = true;
                 return '';
               }
@@ -106,7 +106,7 @@ export default function scriptIsland(): AstroIntegration {
               }
 
               if (externalInfo) {
-                console.log(`[script-island] → Using external script: ${externalInfo.path}`);
+                // console.log(`[script-island] → Using external script: ${externalInfo.path}`);
                 changed = true;
                 return `<astro-island${before}component-url="${externalInfo.path}"${after}>${htmlContent}<!--script-island:${islandId}--></astro-island>`;
               }
@@ -117,26 +117,26 @@ export default function scriptIsland(): AstroIntegration {
 
                 if (!fs.existsSync(filePath)) {
                   fs.writeFileSync(filePath, inlineInfo.content);
-                  console.log(`[script-island] → Created inline script file: ${fileName}`);
+                  // console.log(`[script-island] → Created inline script file: ${fileName}`);
                 }
 
                 changed = true;
                 return `<astro-island${before}component-url="/_astro/${fileName}"${after}>${htmlContent}<!--script-island:${islandId}--></astro-island>`;
               }
 
-              console.log(`[script-island] → No matching script found for ${islandId}`);
+              // console.log(`[script-island] → No matching script found for ${islandId}`);
               return match;
             }
           );
 
           if (changed) {
             fs.writeFileSync(file, content);
-            console.log(`[script-island] Transformed: ${file}`);
+            // console.log(`[script-island] Transformed: ${file}`);
           }
         }
 
         if (renderedOnceIslands.size > 0) {
-          console.log(`[script-island] Deduplicated ${renderedOnceIslands.size} 'once' island type(s)`);
+          // console.log(`[script-island] Deduplicated ${renderedOnceIslands.size} 'once' island type(s)`);
         }
       },
     },

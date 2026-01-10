@@ -12,11 +12,11 @@ export default (element: HTMLElement) => {
     const isMultiple = element.getAttribute('props')?.includes('"data-multiple"');
 
     if (!isMultiple && executedOnceScripts.has(islandId)) {
-      console.log('[script-island] Skipping duplicate once script:', islandId);
+      // console.log('[script-island] Skipping duplicate once script:', islandId);
       return;
     }
 
-    console.log('[script-island] Hydrating island:', islandId);
+    // console.log('[script-island] Hydrating island:', islandId);
 
     if (!isMultiple) {
       executedOnceScripts.add(islandId);
@@ -25,7 +25,7 @@ export default (element: HTMLElement) => {
     const componentUrl = element.getAttribute('component-url');
 
     if (componentUrl?.endsWith('.si')) {
-      console.log('[script-island] Dev mode - fetching from virtual module');
+      // console.log('[script-island] Dev mode - fetching from virtual module');
       try {
         await import(/* @vite-ignore */ `/@script-island/${islandId}.js`);
       } catch (e) {

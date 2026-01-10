@@ -7,8 +7,6 @@ declare global {
 }
 
 export default function scriptIslandVitePlugin(): Plugin[] {
-  const processedFiles = new Set<string>();
-
   globalThis.__scriptIslandScripts = globalThis.__scriptIslandScripts || {};
 
   return [
@@ -18,14 +16,19 @@ export default function scriptIslandVitePlugin(): Plugin[] {
 
       load(id) {
         if (!id.endsWith('.astro')) return;
-        if (processedFiles.has(id)) return;
 
-        const code = fs.readFileSync(id, 'utf-8');
+        let code: string;
+        try {
+          code = fs.readFileSync(id, 'utf-8');
+        } catch {
+          return;
+        }
+
         if (!code.includes('ScriptIsland')) return;
+        if (code.includes('data-script-island-id=')) return;
 
-        console.log(`[script-island] Processing raw file: ${id}`);
+        // console.log(`[script-island] Processing file: ${id}`);
 
-        let counter = 0;
         const newCode = code.replace(
           /<ScriptIsland([^>]*)>([\s\S]*?)<\/ScriptIsland>/g,
           (match, attrs, content) => {
@@ -47,7 +50,7 @@ export default function scriptIslandVitePlugin(): Plugin[] {
               importer: id,
               multiple: isMultiple,
             };
-            console.log(`[script-island] Stored script content for marker: ${markerId}${isMultiple ? ' (multiple)' : ' (once)'}`);
+            // console.log(`[script-island] Stored script content for marker: ${markerId}${isMultiple ? ' (multiple)' : ' (once)'}`);
 
             const multipleMarker = isMultiple ? ' multiple' : '';
             const newContent = content.replace(
@@ -57,14 +60,13 @@ export default function scriptIslandVitePlugin(): Plugin[] {
 
             const cleanAttrs = attrs.replace(/\s*\bmultiple\b/, '');
 
-            console.log(`[script-island] Injecting marker: ${markerId}${multipleMarker}`);
+            // console.log(`[script-island] Injecting marker: ${markerId}${multipleMarker}`);
             return `<ScriptIsland${cleanAttrs} data-script-island-id="${markerId}"${isMultiple ? ' data-multiple="true"' : ''}>${newContent}</ScriptIsland>`;
           }
         );
 
         if (newCode !== code) {
-          processedFiles.add(id);
-          console.log(`[script-island] Transformed!`);
+          // console.log(`[script-island] Transformed!`);
           return newCode;
         }
       },
@@ -82,29 +84,30 @@ export default function scriptIslandVitePlugin(): Plugin[] {
           const scriptData = globalThis.__scriptIslandScripts?.[islandId];
 
           if (scriptData) {
-            console.log(`[script-island] Loading virtual module for: ${islandId}`);
+            // console.log(`[script-island] Loading virtual module for: ${islandId}`);
             return {
               code: scriptData.code,
               map: null,
             };
           }
+
+          console.warn(`[script-island] No script data found for: ${islandId}`);
         }
       },
-      transform(code, id) {
-        if (id.startsWith('\0/@script-island/')) {
-          const islandId = id.replace('\0/@script-island/', '').replace('.js', '');
-          const scriptData = globalThis.__scriptIslandScripts?.[islandId];
+      handleHotUpdate({ file, server }) {
+        if (file.endsWith('.astro')) {
+          const mod = server.moduleGraph.getModuleById(file);
+          if (mod) {
+            server.moduleGraph.invalidateModule(mod);
+          }
 
-          if (scriptData) {
-            return {
-              code,
-              map: null,
-              meta: {
-                vite: {
-                  importer: scriptData.importer,
-                },
-              },
-            };
+          const virtualModules = Object.keys(globalThis.__scriptIslandScripts || {});
+          for (const markerId of virtualModules) {
+            const scriptData = globalThis.__scriptIslandScripts![markerId];
+            if (scriptData.importer === file) {
+              delete globalThis.__scriptIslandScripts![markerId];
+              // console.log(`[script-island] Cleared stale script data: ${markerId}`);
+            }
           }
         }
       },
