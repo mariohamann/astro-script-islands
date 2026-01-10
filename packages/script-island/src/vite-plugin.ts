@@ -1,10 +1,9 @@
 import type { Plugin } from 'vite';
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
-import path from 'node:path';
 
 declare global {
-  var __scriptIslandScripts: Record<string, { code: string; importer: string; }> | undefined;
+  var __scriptIslandScripts: Record<string, { code: string; importer: string; once?: boolean; }> | undefined;
 }
 
 export default function scriptIslandVitePlugin(): Plugin[] {
@@ -33,25 +32,29 @@ export default function scriptIslandVitePlugin(): Plugin[] {
             const scriptMatch = content.match(/<script[^>]*>([\s\S]*?)<\/script>/);
             if (!scriptMatch) return match;
 
-            const markerId = createHash('md5')
-              .update(`${id}-${counter++}`)
-              .digest('hex')
-              .slice(0, 8);
-
+            const hasOnce = /\bonce\b/.test(attrs);
             const scriptContent = scriptMatch[1];
+
+            const markerId = createHash('md5').update(scriptContent.trim()).digest('hex').slice(0, 8);
+
             globalThis.__scriptIslandScripts![markerId] = {
               code: scriptContent,
               importer: id,
+              once: hasOnce,
             };
-            console.log(`[script-island] Stored script content for marker: ${markerId}`);
+            console.log(`[script-island] Stored script content for marker: ${markerId}${hasOnce ? ' (once)' : ''}`);
 
+            const onceMarker = hasOnce ? ' once' : '';
             const newContent = content.replace(
               /(<script)(\s[^>]*>|>)/,
-              `$1$2\n/*! @script-island ${markerId} */`
+              `$1$2\n/*! @script-island ${markerId}${onceMarker} */`
             );
 
-            console.log(`[script-island] Injecting marker: ${markerId}`);
-            return `<ScriptIsland${attrs} data-script-island-id="${markerId}">${newContent}</ScriptIsland>`;
+            // Remove `once` from attrs as it's not a real HTML attribute
+            const cleanAttrs = attrs.replace(/\s*\bonce\b/, '');
+
+            console.log(`[script-island] Injecting marker: ${markerId}${onceMarker}`);
+            return `<ScriptIsland${cleanAttrs} data-script-island-id="${markerId}"${hasOnce ? ' data-once="true"' : ''}>${newContent}</ScriptIsland>`;
           }
         );
 
@@ -89,7 +92,6 @@ export default function scriptIslandVitePlugin(): Plugin[] {
           const scriptData = globalThis.__scriptIslandScripts?.[islandId];
 
           if (scriptData) {
-            const importerDir = path.dirname(scriptData.importer);
             return {
               code,
               map: null,

@@ -1,3 +1,5 @@
+const executedOnceScripts = new Set<string>();
+
 export default (element: HTMLElement) => {
   return async () => {
     const commentMatch = element.innerHTML.match(/<!--script-island:([a-f0-9]+)-->/);
@@ -7,7 +9,18 @@ export default (element: HTMLElement) => {
       return;
     }
 
+    const isOnce = element.getAttribute('props')?.includes('"data-once"');
+
+    if (isOnce && executedOnceScripts.has(islandId)) {
+      console.log('[script-island] Skipping duplicate once script:', islandId);
+      return;
+    }
+
     console.log('[script-island] Hydrating island:', islandId);
+
+    if (isOnce) {
+      executedOnceScripts.add(islandId);
+    }
 
     const componentUrl = element.getAttribute('component-url');
 
