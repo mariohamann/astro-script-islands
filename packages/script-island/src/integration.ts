@@ -2,14 +2,13 @@ import type { AstroIntegration } from 'astro';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import fs from 'node:fs';
+import path from 'node:path';
 import { globby } from 'globby';
 import scriptIslandVitePlugin from './vite-plugin.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export default function scriptIsland(): AstroIntegration {
-  const emittedChunks = new Map<string, string>();
-
   return {
     name: 'script-island',
     hooks: {
@@ -23,7 +22,7 @@ export default function scriptIsland(): AstroIntegration {
         updateConfig({
           vite: {
             plugins: [
-              scriptIslandVitePlugin(emittedChunks),
+              scriptIslandVitePlugin(),
               {
                 name: 'script-island-extension',
                 enforce: 'pre',
@@ -43,26 +42,71 @@ export default function scriptIsland(): AstroIntegration {
       'astro:build:done': async ({ dir }) => {
         const distPath = fileURLToPath(dir);
         const htmlFiles = await globby(['**/*.html'], { cwd: distPath, absolute: true });
+        const astroDir = path.join(distPath, '_astro');
+
+        if (!fs.existsSync(astroDir)) {
+          fs.mkdirSync(astroDir, { recursive: true });
+        }
+
+        const jsFiles = await globby(['_astro/**/*.js'], { cwd: distPath, absolute: true });
+        const externalScripts = new Map<string, string>();
+
+        for (const jsFile of jsFiles) {
+          const jsContent = fs.readFileSync(jsFile, 'utf-8');
+          const markers = [...jsContent.matchAll(/\/\*! @script-island ([a-f0-9]+) \*\//g)];
+          for (const marker of markers) {
+            const relativePath = '/' + path.relative(distPath, jsFile).replace(/\\/g, '/');
+            externalScripts.set(marker[1], relativePath);
+            console.log(`[script-island] Found external marker ${marker[1]} in ${relativePath}`);
+          }
+        }
 
         for (const file of htmlFiles) {
           let content = fs.readFileSync(file, 'utf-8');
           let changed = false;
 
-          for (const [hashValue, chunkFile] of emittedChunks) {
-            const templateRegex = new RegExp(
-              `<!--script-island:${hashValue}--><template data-astro-template>[\\s\\S]*?</template><!--astro:end-->`,
-              'g'
-            );
+          const inlineScripts = new Map<string, string>();
+          const inlineRegex = /<template data-astro-template>[\s\S]*?<script[^>]*type="module"[^>]*>([\s\S]*?)<\/script>[\s\S]*?<\/template>/g;
 
-            if (templateRegex.test(content)) {
-              content = content.replace(templateRegex, '');
-              content = content.replace(
-                /component-url="[^"]*component\.[^"]+"/,
-                `component-url="/${chunkFile}"`
-              );
-              changed = true;
+          let inlineMatch;
+          while ((inlineMatch = inlineRegex.exec(content)) !== null) {
+            const scriptContent = inlineMatch[1];
+            const markerMatch = scriptContent.match(/\/\*! @script-island ([a-f0-9]+) \*\//);
+            if (markerMatch) {
+              const cleanScript = scriptContent.replace(/\/\*! @script-island [a-f0-9]+ \*\/\n?/, '');
+              inlineScripts.set(markerMatch[1], cleanScript);
+              console.log(`[script-island] Found inline marker ${markerMatch[1]}`);
             }
           }
+
+          content = content.replace(
+            /<astro-island([^>]*?)component-url="[^"]*component\.[^"]+"([^>]*)>([\s\S]*?)<!--script-island:([a-f0-9]+)--><template data-astro-template>[\s\S]*?<\/template><!--astro:end--><\/astro-island>/g,
+            (match, before, after, htmlContent, islandId) => {
+              console.log(`[script-island] Processing island with ID: ${islandId}`);
+
+              if (externalScripts.has(islandId)) {
+                const scriptPath = externalScripts.get(islandId)!;
+                console.log(`[script-island] → Using external script: ${scriptPath}`);
+                changed = true;
+                return `<astro-island${before}component-url="${scriptPath}"${after}>${htmlContent}<!--script-island:${islandId}--></astro-island>`;
+              }
+
+              if (inlineScripts.has(islandId)) {
+                const scriptContent = inlineScripts.get(islandId)!;
+                const fileName = `script-island-${islandId}.js`;
+                const filePath = path.join(astroDir, fileName);
+
+                fs.writeFileSync(filePath, scriptContent);
+                console.log(`[script-island] → Created inline script file: ${fileName}`);
+
+                changed = true;
+                return `<astro-island${before}component-url="/_astro/${fileName}"${after}>${htmlContent}<!--script-island:${islandId}--></astro-island>`;
+              }
+
+              console.log(`[script-island] → No matching script found for ${islandId}`);
+              return match;
+            }
+          );
 
           if (changed) {
             fs.writeFileSync(file, content);

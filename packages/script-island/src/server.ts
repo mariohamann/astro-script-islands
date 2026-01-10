@@ -1,5 +1,4 @@
 import type { NamedSSRLoadedRendererValue } from 'astro';
-import { createHash } from 'node:crypto';
 
 const renderer: NamedSSRLoadedRendererValue = {
   name: 'script-island',
@@ -14,21 +13,13 @@ const renderer: NamedSSRLoadedRendererValue = {
     props: Record<string, unknown>,
     slotted: { default?: string; }
   ) {
-    const slot = slotted.default || '';
-
-    const scriptMatch = slot.match(/<script[^>]*>([\s\S]*?)<\/script>/i);
-    const scriptContent = scriptMatch?.[1]?.trim() || '';
+    const slot = String(slotted.default || '');
+    const islandId = (props as { 'data-script-island-id'?: string; })['data-script-island-id'];
 
     const htmlContent = slot.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '').trim();
 
-    if (!scriptContent) {
-      return { html: htmlContent };
-    }
-
-    const contentHash = createHash('md5').update(scriptContent).digest('hex').slice(0, 12);
-
     return {
-      html: `${htmlContent}<!--script-island:${contentHash}-->`,
+      html: `${htmlContent}<!--script-island:${islandId || 'unknown'}-->`,
     };
   },
   supportsAstroStaticSlot: false,

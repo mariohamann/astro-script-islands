@@ -1,21 +1,33 @@
-export default (element: HTMLElement) =>
-  (
-    Component: unknown,
-    props: Record<string, unknown>,
-    slots: Record<string, string>,
-    { client }: { client: string; }
-  ) => {
-    const comment = Array.from(element.childNodes).find(
-      (node): node is Comment =>
-        node.nodeType === Node.COMMENT_NODE &&
-        node.nodeValue?.startsWith('script-island:') === true
-    );
+export default (element: HTMLElement) => {
+  return async () => {
+    const commentMatch = element.innerHTML.match(/<!--script-island:([a-f0-9]+)-->/);
+    const islandId = commentMatch?.[1];
 
-    if (comment?.nodeValue) {
-      const hash = comment.nodeValue.replace('script-island:', '');
+    if (!islandId) {
+      return;
+    }
 
-      import(/* @vite-ignore */ `/virtual:script-island:${hash}`).catch((error) => {
-        console.error(`[script-island] Failed to load script for hash ${hash}:`, error);
-      });
+    console.log('[script-island] Hydrating island:', islandId);
+
+    const componentUrl = element.getAttribute('component-url');
+
+    if (componentUrl?.endsWith('.si')) {
+      console.log('[script-island] Dev mode - fetching from virtual module');
+      try {
+        await import(/* @vite-ignore */ `/@script-island/${islandId}.js`);
+      } catch (e) {
+        console.error('[script-island] Failed to load script:', e);
+      }
+      return;
+    }
+
+    try {
+      const module = await import(/* @vite-ignore */ componentUrl!);
+      if (typeof module.default === 'function') {
+        await module.default();
+      }
+    } catch (e) {
+      console.error('[script-island] Failed to load script:', e);
     }
   };
+};
