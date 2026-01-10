@@ -1,5 +1,10 @@
 export default (element: HTMLElement) =>
-  (Component: unknown, props: Record<string, unknown>, slots: Record<string, string>, { client }: { client: string; }) => {
+  (
+    Component: unknown,
+    props: Record<string, unknown>,
+    slots: Record<string, string>,
+    { client }: { client: string; }
+  ) => {
     const comment = Array.from(element.childNodes).find(
       (node): node is Comment =>
         node.nodeType === Node.COMMENT_NODE &&

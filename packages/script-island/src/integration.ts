@@ -13,7 +13,7 @@ export default function scriptIsland(): AstroIntegration {
   return {
     name: 'script-island',
     hooks: {
-      'astro:config:setup': ({ addRenderer, updateConfig, command }) => {
+      'astro:config:setup': ({ addRenderer, updateConfig }) => {
         addRenderer({
           name: 'script-island',
           serverEntrypoint: resolve(__dirname, './server.ts'),
@@ -31,7 +31,8 @@ export default function scriptIsland(): AstroIntegration {
                   if (id.endsWith('.si')) return id;
                 },
                 load(id) {
-                  if (id.endsWith('.si')) return `const ScriptIsland = () => null; ScriptIsland.__isScriptIsland = true; export default ScriptIsland;`;
+                  if (id.endsWith('.si'))
+                    return `const ScriptIsland = () => null; ScriptIsland.__isScriptIsland = true; export default ScriptIsland;`;
                 },
               },
             ],
@@ -47,21 +48,24 @@ export default function scriptIsland(): AstroIntegration {
           let content = fs.readFileSync(file, 'utf-8');
           let changed = false;
 
-          const transformed = content.replace(
-            /(<astro-island[^>]+)(component-url="[^"]+")([^>]*>)<!--script-island:([a-f0-9]+)-->(?:<template data-astro-template>[\s\S]*?<\/template>)?/g,
-            (match, before, componentUrl, after, hashValue) => {
-              const chunkFile = emittedChunks.get(hashValue);
-              if (chunkFile) {
-                changed = true;
-                return `${before}component-url="/${chunkFile}"${after}`;
-              }
-              console.warn(`[script-island] No chunk found for hash: ${hashValue}`);
-              return match;
+          for (const [hashValue, chunkFile] of emittedChunks) {
+            const templateRegex = new RegExp(
+              `<!--script-island:${hashValue}--><template data-astro-template>[\\s\\S]*?</template><!--astro:end-->`,
+              'g'
+            );
+
+            if (templateRegex.test(content)) {
+              content = content.replace(templateRegex, '');
+              content = content.replace(
+                /component-url="[^"]*component\.[^"]+"/,
+                `component-url="/${chunkFile}"`
+              );
+              changed = true;
             }
-          );
+          }
 
           if (changed) {
-            fs.writeFileSync(file, transformed);
+            fs.writeFileSync(file, content);
             console.log(`[script-island] Transformed: ${file}`);
           }
         }
