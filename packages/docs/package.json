@@ -1,0 +1,26 @@
+{
+  "name": "docs",
+  "type": "module",
+  "version": "0.0.1",
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@astrojs/starlight": "^0.37.2",
+    "@astrojs/starlight-tailwind": "^4.0.2",
+    "@expressive-code/plugin-collapsible-sections": "^0.41.5",
+    "@spectrum-web-components/toast": "^1.10.0",
+    "@tailwindcss/vite": "^4.1.18",
+    "astro": "^5.6.1",
+    "astro-script-islands": "workspace:*",
+    "countup.js": "^2.9.0",
+    "notyf": "^3.10.0",
+    "sharp": "^0.34.2",
+    "tailwindcss": "^4.1.18"
+  },
+  "packageManager": "pnpm@10.18.3+sha512.bbd16e6d7286fd7e01f6b3c0b3c932cda2965c06a908328f74663f10a9aea51f1129eea615134bf992831b009eabe167ecb7008b597f40ff9bc75946aadfb08d"
+}
