@@ -49,16 +49,16 @@ export default function scriptIsland(): AstroIntegration {
         }
 
         const jsFiles = await globby(['_astro/**/*.js'], { cwd: distPath, absolute: true });
-        const externalScripts = new Map<string, { path: string; once: boolean; }>();
+        const externalScripts = new Map<string, { path: string; multiple: boolean; }>();
 
         for (const jsFile of jsFiles) {
           const jsContent = fs.readFileSync(jsFile, 'utf-8');
-          const markers = [...jsContent.matchAll(/\/\*! @script-island ([a-f0-9]+)( once)? \*\//g)];
+          const markers = [...jsContent.matchAll(/\/\*! @script-island ([a-f0-9]+)( multiple)? \*\//g)];
           for (const marker of markers) {
             const relativePath = '/' + path.relative(distPath, jsFile).replace(/\\/g, '/');
-            const isOnce = marker[2] === ' once';
-            externalScripts.set(marker[1], { path: relativePath, once: isOnce });
-            console.log(`[script-island] Found external marker ${marker[1]}${isOnce ? ' (once)' : ''} in ${relativePath}`);
+            const isMultiple = marker[2] === ' multiple';
+            externalScripts.set(marker[1], { path: relativePath, multiple: isMultiple });
+            console.log(`[script-island] Found external marker ${marker[1]}${isMultiple ? ' (multiple)' : ' (once)'} in ${relativePath}`);
           }
         }
 
@@ -70,22 +70,21 @@ export default function scriptIsland(): AstroIntegration {
 
           const pageRenderedOnce = new Set<string>();
 
-          const inlineScripts = new Map<string, { content: string; once: boolean; }>();
+          const inlineScripts = new Map<string, { content: string; multiple: boolean; }>();
           const inlineRegex = /<template data-astro-template>[\s\S]*?<script[^>]*type="module"[^>]*>([\s\S]*?)<\/script>[\s\S]*?<\/template>/g;
 
           let inlineMatch;
           while ((inlineMatch = inlineRegex.exec(content)) !== null) {
             const scriptContent = inlineMatch[1];
-            const markerMatch = scriptContent.match(/\/\*! @script-island ([a-f0-9]+)( once)? \*\//);
+            const markerMatch = scriptContent.match(/\/\*! @script-island ([a-f0-9]+)( multiple)? \*\//);
             if (markerMatch) {
-              const cleanScript = scriptContent.replace(/\/\*! @script-island [a-f0-9]+( once)? \*\/\n?/, '');
-              const isOnce = markerMatch[2] === ' once';
-              inlineScripts.set(markerMatch[1], { content: cleanScript, once: isOnce });
-              console.log(`[script-island] Found inline marker ${markerMatch[1]}${isOnce ? ' (once)' : ''}`);
+              const cleanScript = scriptContent.replace(/\/\*! @script-island [a-f0-9]+( multiple)? \*\/\n?/, '');
+              const isMultiple = markerMatch[2] === ' multiple';
+              inlineScripts.set(markerMatch[1], { content: cleanScript, multiple: isMultiple });
+              console.log(`[script-island] Found inline marker ${markerMatch[1]}${isMultiple ? ' (multiple)' : ' (once)'}`);
             }
           }
 
-          // Process islands - handle both keeping and removing
           content = content.replace(
             /<astro-island([^>]*?)component-url="[^"]*component\.[^"]+"([^>]*)>([\s\S]*?)<!--script-island:([a-f0-9]+)--><template data-astro-template>[\s\S]*?<\/template><!--astro:end--><\/astro-island>/g,
             (match, before, after, htmlContent, islandId) => {
@@ -93,16 +92,15 @@ export default function scriptIsland(): AstroIntegration {
 
               const externalInfo = externalScripts.get(islandId);
               const inlineInfo = inlineScripts.get(islandId);
-              const isOnce = externalInfo?.once || inlineInfo?.once || false;
+              const isMultiple = externalInfo?.multiple || inlineInfo?.multiple || false;
 
-              // Check if this `once` island was already rendered
-              if (isOnce && pageRenderedOnce.has(islandId)) {
+              if (!isMultiple && pageRenderedOnce.has(islandId)) {
                 console.log(`[script-island] → Removing duplicate 'once' island: ${islandId}`);
                 changed = true;
                 return '';
               }
 
-              if (isOnce) {
+              if (!isMultiple) {
                 pageRenderedOnce.add(islandId);
                 renderedOnceIslands.add(islandId);
               }

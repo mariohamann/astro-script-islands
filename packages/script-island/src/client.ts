@@ -9,16 +9,16 @@ export default (element: HTMLElement) => {
       return;
     }
 
-    const isOnce = element.getAttribute('props')?.includes('"data-once"');
+    const isMultiple = element.getAttribute('props')?.includes('"data-multiple"');
 
-    if (isOnce && executedOnceScripts.has(islandId)) {
+    if (!isMultiple && executedOnceScripts.has(islandId)) {
       console.log('[script-island] Skipping duplicate once script:', islandId);
       return;
     }
 
     console.log('[script-island] Hydrating island:', islandId);
 
-    if (isOnce) {
+    if (!isMultiple) {
       executedOnceScripts.add(islandId);
     }
 

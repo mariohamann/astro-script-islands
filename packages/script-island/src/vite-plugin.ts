@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 
 declare global {
-  var __scriptIslandScripts: Record<string, { code: string; importer: string; once?: boolean; }> | undefined;
+  var __scriptIslandScripts: Record<string, { code: string; importer: string; multiple?: boolean; }> | undefined;
 }
 
 export default function scriptIslandVitePlugin(): Plugin[] {
@@ -32,29 +32,33 @@ export default function scriptIslandVitePlugin(): Plugin[] {
             const scriptMatch = content.match(/<script[^>]*>([\s\S]*?)<\/script>/);
             if (!scriptMatch) return match;
 
-            const hasOnce = /\bonce\b/.test(attrs);
-            const scriptContent = scriptMatch[1];
+            const hasMultipleProp = /\bmultiple\b/.test(attrs);
+            const hasNonScriptContent = content
+              .replace(/<script[^>]*>[\s\S]*?<\/script>/g, '')
+              .trim().length > 0;
 
+            const isMultiple = hasMultipleProp || hasNonScriptContent;
+
+            const scriptContent = scriptMatch[1];
             const markerId = createHash('md5').update(scriptContent.trim()).digest('hex').slice(0, 8);
 
             globalThis.__scriptIslandScripts![markerId] = {
               code: scriptContent,
               importer: id,
-              once: hasOnce,
+              multiple: isMultiple,
             };
-            console.log(`[script-island] Stored script content for marker: ${markerId}${hasOnce ? ' (once)' : ''}`);
+            console.log(`[script-island] Stored script content for marker: ${markerId}${isMultiple ? ' (multiple)' : ' (once)'}`);
 
-            const onceMarker = hasOnce ? ' once' : '';
+            const multipleMarker = isMultiple ? ' multiple' : '';
             const newContent = content.replace(
               /(<script)(\s[^>]*>|>)/,
-              `$1$2\n/*! @script-island ${markerId}${onceMarker} */`
+              `$1$2\n/*! @script-island ${markerId}${multipleMarker} */`
             );
 
-            // Remove `once` from attrs as it's not a real HTML attribute
-            const cleanAttrs = attrs.replace(/\s*\bonce\b/, '');
+            const cleanAttrs = attrs.replace(/\s*\bmultiple\b/, '');
 
-            console.log(`[script-island] Injecting marker: ${markerId}${onceMarker}`);
-            return `<ScriptIsland${cleanAttrs} data-script-island-id="${markerId}"${hasOnce ? ' data-once="true"' : ''}>${newContent}</ScriptIsland>`;
+            console.log(`[script-island] Injecting marker: ${markerId}${multipleMarker}`);
+            return `<ScriptIsland${cleanAttrs} data-script-island-id="${markerId}"${isMultiple ? ' data-multiple="true"' : ''}>${newContent}</ScriptIsland>`;
           }
         );
 

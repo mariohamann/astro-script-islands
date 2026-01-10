@@ -2,7 +2,7 @@ import type { ComponentProps } from 'astro/types';
 
 interface ScriptIslandProps {
   children?: any;
-  once?: boolean;
+  multiple?: boolean;
 }
 
 declare const ScriptIsland: (props: ScriptIslandProps) => null;
