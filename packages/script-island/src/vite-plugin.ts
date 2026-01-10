@@ -24,7 +24,7 @@ export default function scriptIslandVitePlugin(
 
   const extractFromFile = async (filePath: string) => {
     const content = await fs.readFile(filePath, 'utf-8');
-    const regex = /<ScriptIsland\s+[^>]*client:[^>]*>\s*<script[^>]*>([\s\S]*?)<\/script>\s*<\/ScriptIsland>/gi;
+    const regex = /<ScriptIsland[^>]*>\s*<script[^>]*>([\s\S]*?)<\/script>\s*<\/ScriptIsland>/gi;
     const extracted = new Map<string, Island>();
 
     let match;
