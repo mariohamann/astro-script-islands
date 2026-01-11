@@ -18,7 +18,7 @@ export default defineConfig({
     scriptIsland(),
     starlight({
       title: 'astro-script-islands',
-      social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/withastro/starlight' }],
+      social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/mariohamann/astro-script-islands' }],
       customCss: [
         './src/styles/global.css',
       ],

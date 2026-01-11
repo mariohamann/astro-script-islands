@@ -3,6 +3,11 @@
   "version": "0.0.1",
   "type": "module",
   "main": "./src/index.ts",
+  "author": "Mario Hamann",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mariohamann/astro-script-islands"
+  },
   "exports": {
     "./integration": {
       "types": "./src/integration.ts",
