@@ -9,10 +9,15 @@ import scriptIslandVitePlugin from './vite-plugin.js';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export default function scriptIsland(): AstroIntegration {
+  let basePrefix = '/';
+
   return {
     name: 'script-island',
     hooks: {
-      'astro:config:setup': ({ addRenderer, updateConfig }) => {
+      'astro:config:setup': ({ addRenderer, updateConfig, config }) => {
+        const base = config.base || '/';
+        basePrefix = base.endsWith('/') ? base : base + '/';
+
         addRenderer({
           name: 'script-island',
           serverEntrypoint: resolve(__dirname, './server.ts'),
@@ -55,7 +60,7 @@ export default function scriptIsland(): AstroIntegration {
           const jsContent = fs.readFileSync(jsFile, 'utf-8');
           const markers = [...jsContent.matchAll(/\/\*! @script-island ([a-f0-9]+)( multiple)? \*\//g)];
           for (const marker of markers) {
-            const relativePath = '/' + path.relative(distPath, jsFile).replace(/\\/g, '/');
+            const relativePath = basePrefix + path.relative(distPath, jsFile).replace(/\\/g, '/');
             const isMultiple = marker[2] === ' multiple';
             externalScripts.set(marker[1], { path: relativePath, multiple: isMultiple });
             // console.log(`[script-island] Found external marker ${marker[1]}${isMultiple ? ' (multiple)' : ' (once)'} in ${relativePath}`);
@@ -121,7 +126,7 @@ export default function scriptIsland(): AstroIntegration {
                 }
 
                 changed = true;
-                return `<astro-island${before}component-url="/_astro/${fileName}"${after}>${htmlContent}<!--script-island:${islandId}--></astro-island>`;
+                return `<astro-island${before}component-url="${basePrefix}_astro/${fileName}"${after}>${htmlContent}<!--script-island:${islandId}--></astro-island>`;
               }
 
               // console.log(`[script-island] → No matching script found for ${islandId}`);
