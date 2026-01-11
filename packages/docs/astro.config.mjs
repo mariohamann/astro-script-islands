@@ -10,6 +10,9 @@ import tailwindcss from '@tailwindcss/vite';
 
 // https://astro.build/config
 export default defineConfig({
+  site: 'https://mariohamann.github.io',
+  base: '/astro-script-islands',
+
   integrations: [
     trackingDirective(),
     scriptIsland(),
