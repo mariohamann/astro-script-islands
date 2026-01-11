@@ -1,8 +1,8 @@
-# astro-script-islands
+# Astro Script Islands
 
 Use Astro's client directives without a framework!
 
-`astro-script-islands` brings the power of `client:load`, `client:visible`, `client:idle` and custom directives to vanilla JavaScript.
+Script Islands brings the power of `client:load`, `client:visible`, `client:idle` and custom directives to vanilla JavaScript.
 
 ## Why?
 
@@ -10,7 +10,7 @@ Use Astro's client directives without a framework!
 - Defer scripts until they're actually needed
 - Reduce initial page load and improve performance
 
-> [!WARNING]
+> [!CAUTION]
 > This package is experimental. While it's tested, there may be edge cases that haven't been considered. Use with caution in production environments. If you are interested in having this functionality officially supported in Astro, please [join the GitHub discussion](https://github.com/withastro/roadmap/discussions/102).
 
 ## Installation
