@@ -3,10 +3,14 @@ import type { NamedSSRLoadedRendererValue } from 'astro';
 const renderer: NamedSSRLoadedRendererValue = {
   name: 'script-island',
   check(Component: unknown) {
-    return (
-      (Component as { name?: string; })?.name === 'ScriptIsland' ||
-      (Component as { toString?: () => string; })?.toString?.().includes('ScriptIsland')
-    );
+    if (typeof Component === 'function' && (Component as { __isScriptIsland?: boolean; }).__isScriptIsland) {
+      return true;
+    }
+    if ((Component as { name?: string; })?.name === 'ScriptIsland') {
+      return true;
+    }
+    const str = (Component as { toString?: () => string; })?.toString?.();
+    return str?.includes('__isScriptIsland') || str?.includes('ScriptIsland');
   },
   renderToStaticMarkup(
     Component: unknown,

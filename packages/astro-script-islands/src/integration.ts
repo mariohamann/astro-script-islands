@@ -31,7 +31,7 @@ export default function scriptIsland(): AstroIntegration {
                 },
                 load(id) {
                   if (id.endsWith('.si'))
-                    return `const ScriptIsland = () => null; ScriptIsland.__isScriptIsland = true; export default ScriptIsland;`;
+                    return `function ScriptIsland() { return null; } ScriptIsland.__isScriptIsland = true; export default ScriptIsland;`;
                 },
               },
             ],
