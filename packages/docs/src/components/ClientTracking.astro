@@ -1,0 +1,52 @@
+---
+import { Badge } from "@astrojs/starlight/components"
+import HoverTracking from "./ClientTracking/Hover.astro"
+import ClickTracking from "./ClientTracking/Click.astro"
+---
+
+<div class="flex flex-col gap-2 p-8 border border-gray-700 rounded-lg">
+  <div class="flex gap-4">
+    <button id="activate-tracking"> Activate Tracking </button>
+    <HoverTracking />
+    <ClickTracking />
+  </div>
+
+  <div class="flex items-center gap-2">
+    Tracking Events: <Badge
+      text="Disabled"
+      variant="caution"
+      id="tracking-badge"
+    />
+  </div>
+</div>
+
+<script>
+  const activateButton = document.getElementById("activate-tracking")
+
+  activateButton?.addEventListener(
+    "click",
+    () => {
+      window.dispatchEvent(new CustomEvent("tracking-activated"))
+
+      const badge = document.getElementById("tracking-badge")
+      if (badge) {
+        badge.textContent = "0"
+        badge.className = badge.className.replace("caution", "note")
+      }
+
+      activateButton.disabled = true
+    },
+    {
+      once: true,
+    }
+  )
+</script>
+
+<style>
+  @reference "../styles/global.css";
+
+  button,
+  div :global(button) {
+    @apply mt-0 px-4 py-2 bg-accent-700 text-white rounded hover:bg-accent-800 disabled:opacity-50 disabled:bg-gray-700 disabled:pointer-events-none;
+  }
+</style>

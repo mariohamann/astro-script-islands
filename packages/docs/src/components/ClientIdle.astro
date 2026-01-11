@@ -1,0 +1,22 @@
+---
+import ScriptIsland from "../../../astro-script-islands/src/component.si"
+import { Badge } from "@astrojs/starlight/components"
+---
+
+<p id="client-idle">
+  <span>Script loaded:</span>
+  <Badge id="idle-false" text="false" variant="danger" />
+  <Badge id="idle-true" text="true" variant="success" class="hidden" />
+</p>
+
+<ScriptIsland client:idle>
+  <script>
+    document.querySelector("#client-idle #idle-false").classList.add("hidden")
+    document.querySelector("#client-idle #idle-true").classList.remove("hidden")
+    document.querySelector("#client-idle span.success").textContent =
+      new Date().toLocaleTimeString()
+    // demo:start
+    window.dispatchEvent(new CustomEvent("island-hydrated"))
+    // demo:end
+  </script>
+</ScriptIsland>

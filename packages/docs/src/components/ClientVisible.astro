@@ -1,0 +1,15 @@
+---
+import ScriptIsland from "../../../astro-script-islands/src/component.si"
+---
+
+<ScriptIsland client:visible>
+  <p>You finally waited for <strong id="countup">0</strong> seconds.</p>
+  <script>
+    import { CountUp } from "countup.js"
+    let demo = new CountUp("countup", 3000)
+    demo.start()
+    // demo:start
+    window.dispatchEvent(new CustomEvent("island-hydrated"))
+    // demo:end
+  </script>
+</ScriptIsland>

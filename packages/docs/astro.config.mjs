@@ -1,7 +1,9 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
-import scriptIsland from 'astro-script-islands/integration';
+import scriptIsland from '../astro-script-islands/src/integration.js';
+import removeDemoBlocks from './src/lib/integrations/remove-demo-blocks.js';
+import trackingDirective from "./src/lib/client-directives/register";
 
 
 import tailwindcss from '@tailwindcss/vite';
@@ -10,6 +12,7 @@ import tailwindcss from '@tailwindcss/vite';
 // https://astro.build/config
 export default defineConfig({
   integrations: [
+    trackingDirective(),
     scriptIsland(),
     starlight({
       title: 'astro-script-islands',
@@ -30,6 +33,7 @@ export default defineConfig({
         './src/styles/global.css',
       ],
     }),
+    removeDemoBlocks(),
   ],
   compressHTML: false,
 

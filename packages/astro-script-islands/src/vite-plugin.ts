@@ -1,6 +1,7 @@
 import type { Plugin } from 'vite';
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
+import path from 'node:path';
 
 declare global {
   var __scriptIslandScripts: Record<string, { code: string; importer: string; multiple?: boolean; }> | undefined;
@@ -73,11 +74,25 @@ export default function scriptIslandVitePlugin(): Plugin[] {
     },
     {
       name: 'script-island-virtual',
-      resolveId(id) {
+
+      resolveId(id, importer) {
         if (id.startsWith('/@script-island/')) {
           return '\0' + id;
         }
+
+        if (importer?.startsWith('\0/@script-island/')) {
+          const markerId = importer.replace('\0/@script-island/', '').replace('.js', '');
+          const scriptData = globalThis.__scriptIslandScripts?.[markerId];
+
+          if (scriptData && (id.startsWith('./') || id.startsWith('../'))) {
+            const importerDir = path.dirname(scriptData.importer);
+            const resolved = path.resolve(importerDir, id);
+            // console.log(`[script-island] Resolved relative import: ${id} -> ${resolved}`);
+            return resolved;
+          }
+        }
       },
+
       load(id) {
         if (id.startsWith('\0/@script-island/')) {
           const islandId = id.replace('\0/@script-island/', '').replace('.js', '');
@@ -94,6 +109,7 @@ export default function scriptIslandVitePlugin(): Plugin[] {
           console.warn(`[script-island] No script data found for: ${islandId}`);
         }
       },
+
       handleHotUpdate({ file, server }) {
         if (file.endsWith('.astro')) {
           const mod = server.moduleGraph.getModuleById(file);

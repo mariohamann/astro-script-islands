@@ -1,0 +1,47 @@
+---
+import { Code } from "@astrojs/starlight/components"
+---
+
+<div class="fixed left-0 bottom-0 w-screen -ml-px z-10" id="terminal">
+  <Code code="..." lang="bash" />
+</div>
+
+<script>
+  const totalIslands = 4
+  let hydratedCount = 0
+
+  const frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
+  let frameIndex = 0
+
+  const terminal = document.querySelector("#terminal .code")
+
+  const updateTerminal = () => {
+    const isDone = hydratedCount === totalIslands
+    const color = isDone ? "#10b981" : "#fbbf24"
+    const symbol = isDone ? "✓" : frames[frameIndex]
+
+    if (terminal) {
+      terminal.innerHTML = `<span style="color: ${color}">${symbol} ${hydratedCount} of ${totalIslands} Astro Islands Hydrated</span>`
+    }
+  }
+
+  const spinnerInterval = setInterval(() => {
+    frameIndex = (frameIndex + 1) % frames.length
+    if (hydratedCount < totalIslands) {
+      updateTerminal()
+    }
+  }, 80)
+
+  updateTerminal()
+
+  window.addEventListener("island-hydrated", () => {
+    if (hydratedCount < totalIslands) {
+      hydratedCount++
+      updateTerminal()
+
+      if (hydratedCount === totalIslands) {
+        clearInterval(spinnerInterval)
+      }
+    }
+  })
+</script>

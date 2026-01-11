@@ -1,0 +1,106 @@
+---
+title: Documentation
+description: Use Astro's Client Directives without a Framework
+template: splash
+hero:
+  tagline: Use Astro's Client Directives without a Framework
+---
+
+import { Card, CardGrid, Tabs, TabItem, Aside, Code } from '@astrojs/starlight/components';
+import ClientIdle from '../../components/ClientIdle.astro';
+import ClientIdleCode from '../../components/ClientIdle.astro?raw';
+import ClientVisible from '../../components/ClientVisible.astro';
+import ClientVisibleCode from '../../components/ClientVisible.astro?raw';
+import ClientTracking from '../../components/ClientTracking.astro';
+import ClientTrackingHoverCode from '../../components/ClientTracking/Hover.astro?raw';
+import ClientTrackingClickCode from '../../components/ClientTracking/Click.astro?raw';
+import Preview from '../../components/Preview.astro';
+import Info from '../../components/Info.astro';
+
+<Info />
+
+## Concept
+
+Bring Astro's client directives to vanilla JavaScript! 🎉
+
+Script Islands fakes a framework renderer so you can use `client:load`, `client:visible`, `client:idle` and friends with plain JavaScript. Each `<ScriptIsland>` extracts its `<script>` into a separate file that only loads when triggered.
+
+**Why?**
+- Use Astro's powerful client directives without any framework overhead
+- Defer scripts until they're actually needed
+- Reduce initial page load size and improve performance
+
+## Installation
+
+Install Script Islands in your Astro project:
+
+<Tabs>
+  <TabItem label="npm" icon="npm">
+```bash
+npm install astro-script-islands
+```
+  </TabItem>
+  <TabItem label="pnpm" icon="pnpm">
+```bash
+pnpm install astro-script-islands
+```
+  </TabItem>
+</Tabs>
+
+Add the integration to your `astro.config.*` file:
+```js add={2,6}
+import { defineConfig } from 'astro/config';
+import ScriptIslands from 'astro-script-islands/integration';
+
+export default defineConfig({
+  integrations: [
+    ScriptIslands()
+  ],
+});
+```
+
+## Examples
+
+### Basic Usage
+
+1. Import the `ScriptIsland` component from `astro-script-islands/component`
+2. Wrap your JavaScript code inside `<ScriptIsland>` 
+3. Use any of [Astro's `client:*` directives](https://docs.astro.build/en/reference/directives-reference/#client-directives) to control when the script loads
+
+<Preview>
+<Code code={ClientIdleCode} lang="astro" title="ClientIdle.astro" mark={[2,7,12]}/>
+<ClientIdle slot="preview" />
+</Preview>
+
+The script inside `<ScriptIsland>` is extracted into a separate file and only loaded when the `client:idle` condition is met (after the page finishes its initial load and the browser is idle).
+
+<Aside>
+Scripts inside `<ScriptIsland>` are **always** extracted into separate files, regardless of their size. This differs from Astro's default behavior of inlining small scripts. Since the goal is to defer script loading, all scripts are treated consistently.
+</Aside>
+
+<Aside type="danger">
+Currently, you cannot mix scripts with and without `<ScriptIsland>` in the same `.astro` file. Each component must use one approach or the other. To work around this, extract islands or regular scripts into separate components.
+</Aside>
+
+### Slotting Elements
+
+You can slot HTML elements or Astro components inside `<ScriptIsland>`. This is useful when using `client:visible`, which needs a visible element to observe.
+
+<Aside>
+When slotting elements, the island renders for every instance of the component.
+</Aside>
+
+<Preview>
+<Code code={ClientVisibleCode} lang="astro" title="ClientVisible.astro" mark={[6]}/>
+<ClientVisible slot="preview" />
+</Preview>
+
+### Custom Client Directives
+
+Script Islands work seamlessly with [Astro's custom client directives](https://docs.astro.build/en/reference/integrations-reference/#addclientdirective-option). This example demonstrates a custom `client:tracking` directive that activates tracking code across multiple components when a global event is dispatched.
+
+<Preview>
+<Code code={ClientTrackingHoverCode} lang="astro" title="ClientTracking/Hover.astro" mark={[7]}/>
+<Code code={ClientTrackingClickCode} lang="astro" title="ClientTracking/Click.astro" mark={[7]}/>
+<ClientTracking slot="preview" />
+</Preview>

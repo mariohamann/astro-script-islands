@@ -1,0 +1,20 @@
+---
+import ScriptIsland from "../../../../astro-script-islands/src/component.si"
+---
+
+<button id="hover-button" disabled>Hover me</button>
+
+<ScriptIsland client:tracking>
+  <script>
+    import { track } from "./track.ts"
+
+    const hoverButton = document.getElementById("hover-button")
+    hoverButton.disabled = false
+    hoverButton?.addEventListener("mouseover", () => {
+      track()
+    })
+    // demo:start
+    window.dispatchEvent(new CustomEvent("island-hydrated"))
+    // demo:end
+  </script>
+</ScriptIsland>
